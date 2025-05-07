@@ -6,7 +6,14 @@ import matplotlib.pyplot as plt
 
 
 # Load cleaned data
-df = pd.read_csv(os.path.join("data", "cleaned_data.csv"))
+#df = pd.read_csv(os.path.join("data", "cleaned_data.csv"))
+
+if 'cleaned_df' in st.session_state:
+    df = st.session_state.cleaned_df.copy()
+else:
+    st.error("No cleaned data found. Please upload data from the Home page first.")
+    st.stop()
+
 
 # Ensure amount is numeric
 df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
