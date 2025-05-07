@@ -76,15 +76,4 @@ To deploy on [Streamlit Community Cloud](https://streamlit.io/cloud):
 3. Set `home.py` as the main entry file.
 4. Your app will be live at: `https://<your-username>.streamlit.app/`
 
----
 
-## 📬 Contact
-
-For questions or feedback, reach out to the development team or submit an issue via GitHub.
-
----
-
-```
-
-You can now paste this directly into your `README.md` file and commit it to your repository. Let me know if you'd like to customize it further (e.g., add contributor names or GitHub badges).
-```
