@@ -3,49 +3,44 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 
-
 # Load cleaned data
-#df = pd.read_csv(os.path.join("data", "cleaned_data.csv"))
-
 if 'cleaned_df' in st.session_state:
     df = st.session_state.cleaned_df.copy()
 else:
     st.error("No cleaned data found. Please upload data from the Home page first.")
     st.stop()
 
+st.title("📋 Applications Ready for Review")
 
-st.title("Applications Ready for Review")
+# Normalize 'request_status' first
+df['request_status'] = df['request_status'].astype(str).str.strip().str.lower()
 
-# Convert necessary column names to lowercase and safe format
-if 'request_status' in df.columns:
-    ready_df = df[df['request_status'].str.lower() == 'approved']
-else:
-    st.error("Missing 'request_status' column in dataset.")
-    ready_df = pd.DataFrame()  # prevent NameError
+# Normalize 'application_signed' to just Y/N
+df['application_signed'] = (
+    df['application_signed']
+    .astype(str)
+    .str.strip()
+    .str.lower()
+    .replace({
+        'yes': 'Y', 'y': 'Y',
+        'no': 'N', 'n': 'N',
+        'missing': 'N', 'none': 'N',
+        'n/a': 'N',
+        'nan': 'N'
+    })
+)
 
-# Filter: Application signed (formerly 'committee_signed')
-if 'application_signed' in df.columns:
-    # Normalize and map all variations to Y/N
-    df['application_signed'] = (
-        df['application_signed']
-        .astype(str)
-        .str.strip()
-        .str.lower()
-        .replace({
-            'yes': 'Y', 'y': 'Y',
-            'no': 'N', 'n': 'N',
-            'missing': 'N', 'none': 'N',
-            'N/A':'N'
-        })
-    )
+# Filter: Only approved applications
+ready_df = df[df['request_status'] == 'approved']
 
-    signed_filter = st.sidebar.selectbox("Filter by Application Signed", ['All', 'Signed', 'Not Signed'])
+# Sidebar filter for signed status
+signed_filter = st.sidebar.selectbox("Filter by Application Signed", ['All', 'Signed', 'Not Signed'])
 
-    if signed_filter == 'Signed':
-        ready_df = ready_df[df['application_signed'] == 'Y']
-    elif signed_filter == 'Not Signed':
-        ready_df = ready_df[df['application_signed'] == 'N']
+if signed_filter == 'Signed':
+    ready_df = ready_df[ready_df['application_signed'] == 'Y']
+elif signed_filter == 'Not Signed':
+    ready_df = ready_df[ready_df['application_signed'] == 'N']
 
-# Show results
+# Show result
 st.write(f"Total: {len(ready_df)} applications")
 st.dataframe(ready_df)

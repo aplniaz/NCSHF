@@ -1,13 +1,13 @@
 import pandas as pd
 import os
 
-# Load paths
-data_path = '/Users/mdmonirulislam@unomaha.edu/Documents/projects/ECON-8320/data'
-raw_path = os.path.join(data_path, 'raw_data.xlsx')
-cleaned_path = os.path.join(data_path, 'cleaned_data.csv')
+# Define file paths
+DATA_DIR = "data"
+RAW_PATH = os.path.join(DATA_DIR, "raw_data.xlsx")
+CLEANED_PATH = os.path.join(DATA_DIR, "cleaned_data.csv")
 
-# Load raw data
-df = pd.read_excel(raw_path)
+# Load raw Excel file
+df = pd.read_excel(RAW_PATH)
 
 # Standardize column names
 df.columns = (
@@ -23,20 +23,20 @@ df.columns = (
     .str.replace(")", "")
 )
 
-# Drop rows without required patient ID
+# Drop rows without required ID
 df.dropna(subset=['patient_idnumber'], inplace=True)
 
-# Convert dates
+# Convert date columns
 date_cols = ['date', 'dob', 'payment_submitted', 'grant_req_date']
 for col in date_cols:
     if col in df.columns:
         df[col] = pd.to_datetime(df[col], format='%m/%d/%Y', errors='coerce')
 
-# Add derived 'year' from grant request
+# Add derived year column
 if 'grant_req_date' in df.columns:
     df['year'] = df['grant_req_date'].dt.year
 
-# Convert numeric columns
+# Convert numeric fields
 numeric_cols = [
     'remaining_balance',
     'total_household_gross_monthly_income',
@@ -47,7 +47,7 @@ for col in numeric_cols:
     if col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-# Normalize values: categorical fields (case-insensitive cleanup)
+# Clean and format categorical columns
 cleanup_cols = {
     'pt_state': 'upper',
     'gender': 'title',
@@ -67,9 +67,26 @@ for col, method in cleanup_cols.items():
         elif method == 'title':
             df[col] = df[col].str.title()
 
-# Optional: replace missing/none values
-df.replace(['nan', 'none', 'None', 'missing', 'Missing'], pd.NA, inplace=True)
+# Normalize pt_state missing/inconsistent entries
+if 'pt_state' in df.columns:
+    df['pt_state'] = (
+        df['pt_state']
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .replace({
+            'NAN': 'Missing',
+            'NaN': 'Missing',
+            'NONE': 'Missing',
+            '': 'Missing',
+            'MISSING': 'Missing'
+        })
+    )
 
-# Save cleaned file
-df.to_csv(cleaned_path, index=False)
-print(f"Cleaned data saved to: {cleaned_path}")
+# Replace other placeholders with NA and unify 'pt_state'
+df.replace(['nan', 'none', 'None', 'missing', 'Missing'], pd.NA, inplace=True)
+df['pt_state'] = df['pt_state'].replace({pd.NA: 'Missing'})
+
+# Save cleaned data
+df.to_csv(CLEANED_PATH, index=False, na_rep="Missing")
+print(f"Cleaned data saved to: {CLEANED_PATH}")

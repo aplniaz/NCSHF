@@ -21,10 +21,8 @@ Welcome to the Hope Foundation dashboard.
 - Annual Impact Summary  
 """)
 
-# File uploader
 uploaded_file = st.file_uploader("Upload new raw Excel file", type=["xlsx"])
 
-# If a file is uploaded, clean and save it
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file)
@@ -82,10 +80,28 @@ if uploaded_file:
                 elif method == 'title':
                     df[col] = df[col].str.title()
 
+        # Normalize and consolidate pt_state missing values
+        if 'pt_state' in df.columns:
+            df['pt_state'] = (
+                df['pt_state']
+                .astype(str)
+                .str.strip()
+                .str.upper()
+                .replace({
+                    'NAN': 'Missing',
+                    'NaN': 'Missing',
+                    'NONE': 'Missing',
+                    '': 'Missing',
+                    'MISSING': 'Missing'
+                })
+            )
+
         df.replace(['nan', 'none', 'None', 'missing', 'Missing'], pd.NA, inplace=True)
+        df['pt_state'] = df['pt_state'].replace({pd.NA: 'Missing'})
+
         # --- CLEANING END ---
 
-        df.to_csv(DATA_PATH, index=False)
+        df.to_csv(DATA_PATH, index=False, na_rep='Missing')
         st.success("✅ New data cleaned and saved to `data/cleaned_data.csv`.")
         st.session_state.cleaned_df = df
 
@@ -93,20 +109,28 @@ if uploaded_file:
         st.error(f"❌ Error processing file: {e}")
         st.stop()
 
-# If no file uploaded but file already exists, load it
 elif os.path.exists(DATA_PATH):
     df = pd.read_csv(DATA_PATH)
+    df['pt_state'] = (
+        df['pt_state']
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .replace({
+            'NAN': 'Missing',
+            'NONE': 'Missing',
+            '': 'Missing',
+            'MISSING': 'Missing'
+        })
+    )
     st.session_state.cleaned_df = df
     st.info("📂 Loaded previously cleaned data from `data/cleaned_data.csv`.")
-
-# Neither uploaded nor saved data exists
 else:
     st.warning("⚠️ No data found. Please upload an Excel file to begin.")
     st.stop()
 
 # ---------- Dashboard content ----------
 
-# KPIs
 st.subheader("📌 Snapshot")
 df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
 total_support = df['amount'].sum()
@@ -118,9 +142,7 @@ col1.metric("Total Support Given", f"${total_support:,.2f}")
 col2.metric("Applications", total_applications)
 col3.metric("Unique Patients", unique_patients)
 
-# Preview table
 st.dataframe(df.head(50))
 
-# Download button
 cleaned_csv = df.to_csv(index=False).encode('utf-8')
 st.download_button("⬇️ Download Cleaned CSV", cleaned_csv, "cleaned_data.csv", "text/csv")
