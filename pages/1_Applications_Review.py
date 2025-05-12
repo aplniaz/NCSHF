@@ -34,7 +34,8 @@ if 'application_signed' in df.columns:
         .replace({
             'yes': 'Y', 'y': 'Y',
             'no': 'N', 'n': 'N',
-            'missing': 'N', 'none': 'N'
+            'missing': 'N', 'none': 'N',
+            'N/A':'N'
         })
     )
 
